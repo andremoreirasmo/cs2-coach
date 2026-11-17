@@ -118,3 +118,13 @@ def test_status_says_when_login_expired(tmp_path):
     db.kv_set(faceit_site.LOGGED_KEY, "0")
     st = cli.get("/api/faceit-site").json()
     assert st["expirou"] is True and st["entrou"] is False
+
+
+def test_room_that_hangs_is_skipped_not_fatal(tmp_path, monkeypatch):
+    db.use(tmp_path / "t.db")
+    site = faceit_site.FaceitSite(on_demo=lambda mid: None)
+
+    def boom(*a):
+        raise RuntimeError("Main window failed to start")
+    monkeypatch.setattr(site, "_link_once", boom)
+    assert site._link(A, None, remember=False) is False and site.win is None

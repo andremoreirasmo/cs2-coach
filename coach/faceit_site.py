@@ -91,8 +91,13 @@ CLICK_JS = "(() => {" + _FIND + r"""
       return { closed: false, close() {}, focus() {}, document: { write() {}, close() {} },
                get location() { return loc; }, set location(x) { keep(x); } };
     };
+    const isDemo = (u) => u && !u.includes('/room/') && /\.dem|demo/i.test(u);
     const ac = HTMLAnchorElement.prototype.click;
-    HTMLAnchorElement.prototype.click = function () { keep(this.href); return ac.call(this); };
+    HTMLAnchorElement.prototype.click = function () { keep(this.href); if (!isDemo(this.href)) return ac.call(this); };
+    document.addEventListener('click', (e) => {
+      const a = e.target && e.target.closest ? e.target.closest('a') : null;
+      if (a && isDemo(a.href)) { keep(a.href); e.preventDefault(); }
+    }, true);
   }
   const a = el.closest('a');
   if (a && a.href && !a.href.includes('/room/')) keep(a.href);
@@ -213,9 +218,13 @@ class FaceitSite:
         return self.win.evaluate_js(code)
 
     def _goto(self, url: str) -> None:
+        if self.win is None:  # janela recriada depois de um problema
+            self._window(url, False)
+            time.sleep(2)
+            return
         self.win.events.loaded.clear()
         self.win.load_url(url)
-        self.win.events.loaded.wait(30)
+        self.win.events.loaded.wait(60)  # a sala da FACEIT é pesada; minimizada, demora mais
         time.sleep(2)
 
     @staticmethod
@@ -295,14 +304,20 @@ class FaceitSite:
                 self.state["msg"] = f"Partida {i + 1} de {len(todo)}"
                 url = self._link(fid, when, remember=False)
                 if url:
-                    path = self._download(url, fid, scout.DIR / "baixando")
-                    self.state["msg"] = f"Analisando partida {i + 1} de {len(todo)}"
-                    if pool is None:
-                        import multiprocessing as mp
-                        from concurrent.futures import ProcessPoolExecutor
-                        pool = ProcessPoolExecutor(max_workers=1, mp_context=mp.get_context("spawn"))
-                    pool.submit(scout.analyze_job, str(path), fid, steamid, nick, when).result()
-                    self.state["baixadas"] += 1
+                    try:
+                        path = self._download(url, fid, scout.DIR / "baixando")
+                        self.state["msg"] = f"Analisando partida {i + 1} de {len(todo)}"
+                        if pool is None:
+                            import multiprocessing as mp
+                            from concurrent.futures import ProcessPoolExecutor
+                            pool = ProcessPoolExecutor(max_workers=1, mp_context=mp.get_context("spawn"))
+                        pool.submit(scout.analyze_job, str(path), fid, steamid, nick, when).result()
+                        self.state["baixadas"] += 1
+                    except Exception as e:
+                        if self._stop.is_set():
+                            break
+                        log.warning("FACEIT: partida %s de %s falhou (%s); sigo para a próxima", fid, nick, e)
+                        pool = None if "BrokenProcessPool" in type(e).__name__ else pool
                 elif url is None:
                     self.state["sem_demo"] += 1
                 self.state["feitas"] = i + 1
@@ -356,7 +371,13 @@ class FaceitSite:
                 if self._stop.is_set():
                     break
                 self.state["msg"] = f"Partida {i + 1} de {len(todo)}"
-                got = self._one(fid, when)
+                try:
+                    got = self._one(fid, when)
+                except Exception as e:
+                    if self._stop.is_set():
+                        break
+                    log.warning("FACEIT: partida %s falhou (%s); sigo para a próxima", fid, e)
+                    got = False
                 self.state["feitas"] = i + 1
                 if got:
                     misses = 0
@@ -382,6 +403,28 @@ class FaceitSite:
 
     def _link(self, fid: str, when: float | None, remember: bool = True) -> str | bool | None:
         """Abre a sala e clica em Assistir demo. URL da demo; None: a sala não tem demo; False: falhou."""
+        try:
+            return self._link_once(fid, when, remember)
+        except Exception as e:
+            if self._stop.is_set():
+                raise
+            log.warning("FACEIT: a sala %s não respondeu (%s); sigo para a próxima", fid, e)
+            self._reset_window()
+            return False
+
+    def _reset_window(self) -> None:
+        win, self.win = self.win, None
+        if win is not None:
+            try:
+                win.events.closed -= self._closed  # fechar de propósito não é "você fechou a janela"
+            except Exception:
+                pass
+            try:
+                win.destroy()
+            except Exception:
+                pass
+
+    def _link_once(self, fid: str, when: float | None, remember: bool) -> str | bool | None:
         self._goto(f"{SITE}/cs2/room/{fid}")
         found = "carregando"
         for _ in range(25):
