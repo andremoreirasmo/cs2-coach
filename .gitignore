@@ -1,0 +1,23 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Frontend (gerado por npm install / npm run build)
+frontend/node_modules/
+frontend/dist/
+
+# Dados pessoais e segredos: banco, demos, logs, token do GSI, perfil do navegador embutido
+data/
+.env
+*.dem
+*.db
+*.log
+
+# Editor / sistema
+.vscode/
+.idea/
+.claude/
+Thumbs.db
+desktop.ini
