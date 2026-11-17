@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api, post } from './lib.jsx'
+import { useFaceitSync } from './FaceitSync.jsx'
 
 const open = (name) => post(`/open/${name}`).catch(() => {})
 
@@ -72,6 +73,7 @@ const gb = (b) => (b >= 1e9 ? `${(b / 1e9).toFixed(1).replace('.', ',')} GB` : `
 
 export default function Settings() {
   const [st, setSt] = useState(null)
+  const faceit = useFaceitSync()
   const [fk, setFk] = useState('')
   const [nick, setNick] = useState('')
   const [sk, setSk] = useState('')
@@ -84,7 +86,6 @@ export default function Settings() {
   const [ss, saveSteam] = useSave(() => post('/settings/steam', { key: sk, auth, sharecode: code }),
     (s) => { setSt(s); setSk(''); setAuth(''); setCode('') })
   const clear = (what) => post(`/settings/${what}`, { clear: true }).then(setSt)
-  const startup = (on) => post('/settings/startup', { on }).then(setSt)
   const originals = (on) => post('/settings/originais', { on }).then(setSt)
   const pauseInGame = (on) => post('/settings/pausar', { on }).then(setSt)
   const [cleaning, setCleaning] = useState(null)
@@ -111,12 +112,13 @@ export default function Settings() {
       </div>
 
       {/* ---------------- FACEIT ---------------- */}
-      <Section ok={st.faceit.ok} title="FACEIT" desc="Não precisa de chave nem de aprovação. Só o seu nick, para o app abrir suas partidas na FACEIT com um clique."
+      <Section ok={st.faceit.ok} title="FACEIT" desc="Não precisa de chave nem de aprovação. Com o seu nick e o login na FACEIT dentro do app, ele baixa as demos das suas partidas sozinho."
         icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M21.5 2.5 9 9.4h12.5V2.5zM2.5 21.5h5.6L21.5 12H9z" opacity=".9" /></svg>}>
         <Steps>
           <li>Escreva seu nick <b>exatamente</b> como aparece na FACEIT e salve.</li>
-          <li>Depois de cada partida, clique em <b>Partidas na FACEIT</b> na tela inicial, abra a partida e clique em <b>Assistir demo</b>.</li>
-          <li>Pronto: o arquivo cai na pasta Downloads e o app importa e analisa sozinho. Se baixar em outro lugar, use <b>+ Adicionar demo</b>.</li>
+          <li>Clique em <b>Entrar na FACEIT</b> abaixo e faça login na janela que abrir (uma vez só; o login fica salvo no app).</li>
+          <li>Feche a janela: o app abre o seu histórico e, nas partidas que faltam, clica em <b>Assistir demo</b> por você,
+            uma por vez, com pausa entre elas. Só as suas partidas dos últimos 30 dias. Depois, ele confere sempre que o app abre.</li>
         </Steps>
         <div className="field-row">
           <Field label="Seu nick na FACEIT" value={nick} onChange={setNick} placeholder="Ex.: SeuNick" />
@@ -134,8 +136,10 @@ export default function Settings() {
         </details>
         <div className="cfg-actions">
           <button className="btn-primary" disabled={fs.busy || !nick} onClick={saveFaceit}>Salvar</button>
+          {st.faceit.ok && <button className="btn-ghost" onClick={faceit.login}>Entrar na FACEIT</button>}
           {st.faceit.ok && <button className="btn-ghost" onClick={() => clear('faceit')}>Remover</button>}
           <Result s={fs} />
+          {faceit.err && <span className="result bad">✕ {faceit.err}</span>}
         </div>
       </Section>
 
@@ -166,15 +170,16 @@ export default function Settings() {
       </Section>
 
       {/* ---------------- App ---------------- */}
-      <section className="card cfg">
+      {faceit.st && !faceit.st.indisponivel && <section className="card cfg">
         <div className="cfg-head">
           <div className="cfg-title">
-            <h2>Iniciar com o Windows</h2>
-            <p>Abre o app escondido na bandeja quando o PC liga, para não perder nenhuma partida.</p>
+            <h2>Baixar as demos da FACEIT ao abrir o app</h2>
+            <p>Quando você abre o app, ele abre seu histórico na janela da FACEIT, minimizada, e baixa as demos das
+              partidas novas. Precisa ter entrado na FACEIT pelo app uma vez. A qualquer hora: botão Baixar da FACEIT.</p>
           </div>
-          <button className={`toggle ${st.app.startup ? 'on' : ''}`} onClick={() => startup(!st.app.startup)} aria-label="Iniciar com o Windows"><i /></button>
+          <button className={`toggle ${faceit.st.auto ? 'on' : ''}`} onClick={() => faceit.setAuto(!faceit.st.auto)} aria-label="Baixar as demos da FACEIT sozinho"><i /></button>
         </div>
-      </section>
+      </section>}
 
       <section className="card cfg">
         <div className="cfg-head">

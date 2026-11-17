@@ -45,3 +45,4 @@ def cs2_in_foreground() -> bool:
         return foreground_exe() == "cs2.exe"
     except Exception:
         return False
+

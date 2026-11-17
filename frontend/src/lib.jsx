@@ -94,6 +94,7 @@ export const Icon = {
   aim: (p) => <svg {...s} width={22} height={22} {...p}><circle cx="12" cy="12" r="8" /><path d="M12 2v5M12 17v5M2 12h5M17 12h5" /></svg>,
   gear: (p) => <svg {...s} width={22} height={22} {...p}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></svg>,
   trophy: (p) => <svg {...s} width={22} height={22} {...p}><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z" /><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3" /></svg>,
+  versus: (p) => <svg {...s} width={22} height={22} {...p}><circle cx="8" cy="8" r="3" /><circle cx="16" cy="16" r="3" /><path d="M3 20a5 5 0 0 1 8-4M21 4a5 5 0 0 1-8 4" /></svg>,
   back: (p) => <svg {...s} {...p}><path d="m15 18-6-6 6-6" /></svg>,
   bulb: (p) => <svg {...s} width={22} height={22} {...p}><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V17h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z" /></svg>,
   // como o round acabou
@@ -151,6 +152,20 @@ export function teamLabel(name, mvp) {
 
 
 // ---------- abas ----------
+// Telas que precisam saber quem é você (Geral, Mira): o que fazer quando ainda não dá.
+export function NoMe({ n }) {
+  if (!n) {
+    return (
+      <div className="card empty">
+        <b>Nenhuma partida analisada ainda</b>
+        Traga sua primeira partida pela tela inicial: os números aparecem aqui assim que ela for analisada.
+        <div><button className="btn-primary" onClick={() => { location.hash = '#/' }}>Ir para o início</button></div>
+      </div>
+    )
+  }
+  return <div className="card empty"><b>Escolha quem é você</b>Abra uma partida e clique no seu nome no placar.</div>
+}
+
 export function useTab(page, first) {
   const key = `tab:${page}`
   const [tab, setTab] = useState(() => { try { return localStorage.getItem(key) || first } catch { return first } })

@@ -14,6 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from . import aim, analysis, cs2launch, db, duels, faceit, moments, overview, radar, steam, utility
 from .config import ROOT, gsi_token
 from .demos_api import make_router as make_demos_router
+from .faceit_site import make_router as make_faceit_site_router
 from .gsi import Tracker
 from .settings_api import router as settings_router
 from .settings_api import same_origin
@@ -30,12 +31,14 @@ def create_app(tracker: Tracker, show_window: Callable[[], None] | None = None,
                busy: Callable[[], bool] | None = None,
                pick_files: Callable[[], list[str]] | None = None,
                on_demo: Callable[[int], None] = lambda mid: None,
-               progress: Callable[[], dict] | None = None) -> FastAPI:
+               progress: Callable[[], dict] | None = None,
+               faceit_site=None) -> FastAPI:
     app = FastAPI(title="CS2 Coach", docs_url=None, redoc_url=None)
     token = gsi_token()
     analysis.migrate()
     app.include_router(settings_router)
     app.include_router(make_demos_router(pick_files, on_demo))
+    app.include_router(make_faceit_site_router(faceit_site))
 
     @app.post("/gsi")
     async def gsi(request: Request):
@@ -172,7 +175,7 @@ def create_app(tracker: Tracker, show_window: Callable[[], None] | None = None,
     def get_aim(fonte: str = "todas", ultimas: int = 0, partida: int = 0, geral: int = 0):
         me = db.kv_get("steamid")
         if not me:
-            return {"partidas": 0, "sem_jogador": True}
+            return {"partidas": 0, "sem_jogador": True, "analisadas": overview.analyzed_count()}
         if partida:
             ids = [partida]
         else:

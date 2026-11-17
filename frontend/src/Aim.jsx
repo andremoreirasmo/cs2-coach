@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { Tabs, api, mapInfo, useTab, when } from './lib.jsx'
+import { NoMe, Tabs, api, mapInfo, useTab, when } from './lib.jsx'
 
 const FONTES = [['todas', 'Todas'], ['faceit', 'FACEIT'], ['valve', 'Premier / Comp.']]
 const ULTIMAS = [[10, 'Últimas 10'], [20, 'Últimas 20'], [0, 'Todas']]
@@ -256,9 +256,10 @@ export default function Aim({ go }) {
         </div>
       </div>
       {!d ? <div className="loading"><div><div className="spinner" />Calculando…</div></div>
+        : d.sem_jogador ? <NoMe n={d.analisadas} />
         : !d.voce ? (
           <div className="card empty">
-            <b>{d.sem_jogador ? 'Escolha qual jogador é você' : 'Sem tiros ainda'}</b>
+            <b>Sem tiros ainda</b>
             {d.faltam ? `Lendo os tiros de ${d.faltam} partida(s) antigas. Volte em alguns minutos.` : 'A mira aparece aqui quando houver partidas analisadas.'}
           </div>
         ) : (

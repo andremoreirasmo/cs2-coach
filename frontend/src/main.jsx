@@ -6,6 +6,7 @@ import { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import Home from './Home.jsx'
 import Aim from './Aim.jsx'
+import Compare from './Compare.jsx'
 import Maps from './Maps.jsx'
 import Match from './Match.jsx'
 import Overview from './Overview.jsx'
@@ -47,13 +48,14 @@ function App() {
   const geral = hash.startsWith('#/geral')
   const mapas = hash.startsWith('#/mapas')
   const mira = hash.startsWith('#/mira')
+  const comparar = hash.startsWith('#/comparar')
   const go = (h) => { location.hash = h; document.querySelector('.main')?.scrollTo(0, 0) }
 
   return (
     <div className="app">
       <nav className="side">
         <div className="logo">C</div>
-        <button className={`nav-btn ${!m && !cfg && !geral && !mapas && !mira ? 'active' : ''}`} onClick={() => go('#/')}>
+        <button className={`nav-btn ${!m && !cfg && !geral && !mapas && !mira && !comparar ? 'active' : ''}`} onClick={() => go('#/')}>
           <Icon.home /><span className="tip">Início</span>
         </button>
         <button className={`nav-btn ${geral ? 'active' : ''}`} onClick={() => go('#/geral')}>
@@ -64,6 +66,9 @@ function App() {
         </button>
         <button className={`nav-btn ${mira ? 'active' : ''}`} onClick={() => go('#/mira')}>
           <Icon.aim /><span className="tip">Mira</span>
+        </button>
+        <button className={`nav-btn ${comparar ? 'active' : ''}`} onClick={() => go('#/comparar')}>
+          <Icon.versus /><span className="tip">Comparar</span>
         </button>
         <div className="nav-spacer" />
         {me?.steamid && (
@@ -80,6 +85,7 @@ function App() {
           : geral ? <Overview />
           : mapas ? <Maps go={go} />
           : mira ? <Aim go={go} />
+          : comparar ? <Compare />
           : rm ? <Round key={hash} mid={+rm[1]} rn={+rm[2]} at={rm[3] ? +rm[3] : null} go={go} />
           : m ? <Match id={m[1]} back={() => go('#/')} go={go} />
           : <Home open={(id) => go(`#/partida/${id}`)} live={live} fila={fila} go={go} />}

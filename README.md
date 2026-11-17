@@ -12,7 +12,8 @@ O programa só usa caminhos oficiais e passivos:
 | Sabe se você está jogando pela janela ativa do Windows | Só pergunta ao Windows qual programa está em primeiro plano. Nada é lido do jogo. |
 | Game State Integration (**desligado por padrão**) | Recurso oficial da Valve, mas neste PC deixou as animações do CS lentas. Para religar: `GSI_ENABLED=1` no `.env`. |
 | Lê arquivos `.dem` | Arquivo em disco, lido depois da partida. Os originais nunca são alterados. |
-| Steam Web API / FACEIT Data API | APIs públicas oficiais, com as suas chaves. |
+| Steam Web API / FACEIT Data API | APIs públicas oficiais, com as suas chaves (opcionais). |
+| Janela da FACEIT dentro do app | Você faz login nela; o app abre o histórico e clica em "Assistir demo", uma partida por vez, como você faria. A senha nunca passa pelo app. |
 
 O que ele **não** faz: não lê nem escreve memória do jogo, não injeta nada, não desenha overlay,
 não envia teclas/mouse, não faz login na sua conta Steam, não fala com o Game Coordinator.
@@ -20,24 +21,16 @@ Enquanto há partida em andamento, ele não importa demos nem chama APIs.
 
 ## Instalação
 
-```bash
-py -3.14 -m venv .venv
-.venv\Scripts\python -m pip install -r requirements.txt
-copy .env.example .env
-```
+1. Instale o [Python 3.12+](https://www.python.org/downloads/) (marque "Add python.exe to PATH") e o
+   [Node.js LTS](https://nodejs.org/).
+2. Baixe este projeto e dê dois cliques em **`instalar.bat`**. Ele prepara tudo, cria os atalhos e abre o app.
+3. No app, siga o **Comece por aqui** da tela inicial.
 
-As chaves são configuradas **pela tela Configurações do app** (ícone de engrenagem), com passo a passo
-e teste na hora. Elas ficam no Gerenciador de Credenciais do Windows; o `.env` é só uma reserva opcional.
-Compile a interface e crie os atalhos:
+As configurações são feitas **pela tela Configurações do app** (ícone de engrenagem), com passo a passo.
+Chaves ficam no Gerenciador de Credenciais do Windows; o `.env` (copie de `.env.example`) é só uma reserva opcional.
 
-```bash
-cd frontend && npm install && npm run build && cd ..
-powershell -ExecutionPolicy Bypass -File tools\criar_atalhos.ps1
-```
-
-Abra pelo atalho **CS2 Coach** (Área de Trabalho ou Menu Iniciar). Fechar a janela deixa o app na
-bandeja do Windows esperando a próxima partida; para encerrar, clique com o botão direito no ícone > Sair.
-Com `-Startup` o script também faz o app iniciar com o Windows (escondido na bandeja).
+Abra pelo atalho **CS2 Coach** (Área de Trabalho ou Menu Iniciar) quando quiser ver suas partidas.
+Ao abrir, ele importa as demos novas (pasta do CS2, Downloads e FACEIT). Fechar a janela encerra o app.
 
 Na primeira execução ele cria `gamestate_integration_coach.cfg` na pasta `cfg` do CS2.
 **Reinicie o CS2** depois disso. Sem janela (só serviço): `python -m coach.main`.

@@ -6,7 +6,6 @@ zstandard>=0.23
 demoparser2>=0.42.2
 pytest>=8
 pywebview>=6.2
-pystray>=0.19
 pillow>=11
 vpk>=1.4
 lz4>=4.3

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { Tabs, api, mapInfo, ratingColor, useTab, when } from './lib.jsx'
+import { NoMe, Tabs, api, mapInfo, ratingColor, useTab, when } from './lib.jsx'
 import { TypeBars } from './Duels.jsx'
 
 const FONTES = [['todas', 'Todas'], ['faceit', 'FACEIT'], ['valve', 'Premier / Comp.']]
@@ -206,7 +206,7 @@ export default function Overview() {
         </div>
       </div>
       {!st && <div className="loading"><div><div className="spinner" />Carregando…</div></div>}
-      {st && !st.me && <div className="card empty"><b>Escolha quem é você</b>Abra uma partida e clique no seu nome.</div>}
+      {st && !st.me && <NoMe n={st.analisadas} />}
       {st?.me && !st.total && <div className="card empty"><b>Nada analisado ainda neste filtro</b>As partidas aparecem aqui assim que a análise termina.</div>}
       {st?.total && (
         <div className="ov">

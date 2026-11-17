@@ -1,35 +1,30 @@
 """App com janela: python -m coach.app  (use o atalho "CS2 Coach").
 
 - Abre uma janela própria (WebView2 do Windows) com a interface.
-- Fechar a janela só esconde: o app continua na bandeja esperando a próxima partida.
-- "Sair" no ícone da bandeja encerra de verdade.
+- Fechar a janela encerra o app. Abra quando quiser ver suas partidas.
 - Abrir o atalho de novo só traz a janela de volta (instância única).
-- --tray: inicia escondido (para iniciar com o Windows).
 """
 from __future__ import annotations
 
 import ctypes
 import logging
 import os
-import sys
 import threading
 import time
 from pathlib import Path
 
 import httpx
-import pystray
 import uvicorn
 import webview
-from PIL import Image
 
 from .config import DATA, ROOT, settings
+from .faceit_site import FaceitSite
 from .server import create_app
 from .services import Services, setup_logging
 
 log = logging.getLogger("coach.app")
 URL = f"http://127.0.0.1:{settings.gsi_port}"
 ICO = ROOT / "assets" / "icon.ico"
-PNG = ROOT / "assets" / "icon.png"
 
 
 def already_running() -> bool:
@@ -57,13 +52,11 @@ def set_window_icon(window) -> None:
 
 
 def main() -> None:
-    start_hidden = "--tray" in sys.argv
     if already_running():
         return
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("CS2Coach.App")
     setup_logging(console=False)
 
-    state = {"quitting": False}
     window = None
 
     def show() -> None:
@@ -82,9 +75,11 @@ def main() -> None:
 
     services = Services()
     services.start()
+    faceit_site = FaceitSite(on_demo=services.analyzer.submit)
+    faceit_site.start_auto()
     server = uvicorn.Server(uvicorn.Config(create_app(services.tracker, show_window=show, busy=services.in_game,
                                                       pick_files=pick_files, on_demo=services.analyzer.submit,
-                     progress=services.analyzer.progress),
+                                                      progress=services.analyzer.progress, faceit_site=faceit_site),
                                            host="127.0.0.1", port=settings.gsi_port, log_level="warning"))
     threading.Thread(target=server.run, daemon=True, name="http").start()
     for _ in range(100):
@@ -96,31 +91,10 @@ def main() -> None:
     index = ROOT / "frontend" / "dist" / "index.html"
     build = int(index.stat().st_mtime) if index.exists() else 0
     window = webview.create_window("CS2 Coach", f"{URL}/?v={build}", width=1380, height=900, min_size=(1100, 700),
-                                   background_color="#0a0c10", hidden=start_hidden, text_select=False)
+                                   background_color="#0a0c10", text_select=False)
 
-    def on_closing():
-        if state["quitting"]:
-            return True
-        threading.Thread(target=window.hide, daemon=True).start()
-        return False  # cancela o fechamento: fica na bandeja
-
-    def quit_app(icon=None, item=None):
-        state["quitting"] = True
-        tray.stop()
-        server.should_exit = True
-        try:
-            window.destroy()
-        finally:
-            threading.Timer(1.5, lambda: os._exit(0)).start()
-
-    window.events.closing += on_closing
     window.events.shown += lambda: set_window_icon(window)
-
-    tray = pystray.Icon("cs2coach", Image.open(PNG), "CS2 Coach", menu=pystray.Menu(
-        pystray.MenuItem("Abrir CS2 Coach", lambda *_: show(), default=True),
-        pystray.MenuItem("Sair", quit_app),
-    ))
-    tray.run_detached()
+    window.events.closed += lambda: os._exit(0)  # fechou a janela: encerra tudo (inclusive a da FACEIT)
 
     webview.start(gui="edgechromium", private_mode=False, storage_path=str(DATA / "webview"))
     os._exit(0)

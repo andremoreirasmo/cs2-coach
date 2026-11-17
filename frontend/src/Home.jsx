@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { BestPlays } from './Moments.jsx'
+import { FaceitSyncButton, syncText, useFaceitSync } from './FaceitSync.jsx'
 import { SOURCE, Tabs, api, mapBg, mapInfo, playedWhen, post, teamLabel, ratingColor, resultClass, useTab } from './lib.jsx'
 
 const STATUS = {
@@ -198,6 +199,42 @@ function Tiles({ d }) {
   )
 }
 
+function GetStarted({ cfg, fs, add, fila }) {
+  const nick = cfg.faceit.ok, entrou = !!fs.st?.entrou, rodando = !!fs.st?.rodando
+  const st = fs.st || {}
+  const step3 = rodando
+    ? (st.total ? `Baixando a partida ${Math.min(st.feitas + 1, st.total)} de ${st.total} (uma por vez, com pausa).` : 'Abrindo seu histórico na FACEIT…')
+      + ' Cada partida aparece aqui assim que chega; a análise leva uns 30 s por partida.'
+    : fila?.analise ? `Analisando: ${fila.analise.feitas} de ${fila.analise.total} prontas. As partidas aparecem aqui em seguida.`
+    : st.erro || 'O app abre seu histórico e baixa as demos dos últimos 30 dias, uma por vez.'
+  const Step = ({ n, done, title, text, children }) => (
+    <li className={`gs-step ${done ? 'done' : ''}`}>
+      <span className="gs-n">{done ? '✓' : n}</span>
+      <div className="gs-body"><b>{title}</b><p>{text}</p></div>
+      {!done && <div className="gs-act">{children}</div>}
+    </li>
+  )
+  return (
+    <div className="card getstarted">
+      <h2>Comece por aqui</h2>
+      <ol>
+        <Step n={1} done={nick} title="Seu nick da FACEIT" text="Para o app achar as suas partidas.">
+          <button className="btn-primary" onClick={() => { location.hash = '#/config' }}>Configurar</button>
+        </Step>
+        <Step n={2} done={entrou} title="Entrar na FACEIT dentro do app"
+          text="Faça login na janela que abrir e feche-a; o download começa sozinho. Se aparecer &quot;verificando se você é humano&quot;, é normal: espere uns segundos ou marque a caixa. É uma vez só; o login fica salvo.">
+          <button className={nick ? 'btn-primary' : 'btn-ghost'} disabled={!nick || fs.st?.indisponivel} onClick={fs.login}>Entrar na FACEIT</button>
+        </Step>
+        <Step n={3} done={false} title="Baixar suas partidas" text={step3}>
+          {rodando ? <span className="spinner sm" /> : <button className={entrou ? 'btn-primary' : 'btn-ghost'} disabled={!entrou} onClick={fs.sync}>Baixar da FACEIT</button>}
+        </Step>
+      </ol>
+      <p className="gs-alt"><b>Joga Premier ou Competitivo?</b> No CS2: Assistir → Suas partidas → baixar a demo. Ela aparece aqui sozinha.
+        Tem um arquivo .dem? <button className="link-btn" onClick={() => add()}>+ Adicionar demo</button></p>
+    </div>
+  )
+}
+
 export default function Home({ open, live, fila, go }) {
   const [matches, setMatches] = useState(null)
   const [tab, setTab] = useTab('inicio', 'partidas')
@@ -214,6 +251,8 @@ export default function Home({ open, live, fila, go }) {
     return () => clearInterval(t)
   }, [])
   const { add, busy, toast } = useAddDemo(load)
+  const fs = useFaceitSync()
+  const fsText = (fs.st?.alvo ? null : syncText(fs.st)) || fs.err
 
   return (
     <div className="page">
@@ -227,12 +266,26 @@ export default function Home({ open, live, fila, go }) {
             <span className={`dot ${live ? 'live' : fila?.analise ? 'work' : 'ok'}`} />
             {queueText(live, fila)}
           </div>
-          {cfg?.faceit.ok && <button className="btn-ghost" onClick={() => post('/open-faceit-history').catch(() => {})}>Partidas na FACEIT ↗</button>}
+          {cfg?.faceit.ok && <FaceitSyncButton f={fs} />}
           <button className="btn-primary" disabled={busy} onClick={() => add()}>{busy ? 'Importando…' : '+ Adicionar demo'}</button>
         </div>
       </div>
       {toast && <div className={`toast ${toast.ok ? 'good' : 'bad'}`}>{toast.text}</div>}
-      {cfg && !cfg.faceit.ok && (
+      {fsText && <div className={`toast ${fs.st?.erro || fs.err ? 'bad' : 'good'}`}>
+        {fsText}
+        {(fs.st?.erro || '').includes('logado') && <> <button className="link-btn" onClick={fs.login}>Entrar na FACEIT</button></>}
+      </div>}
+      {matches?.length === 0 && cfg && <GetStarted cfg={cfg} fs={fs} add={add} fila={fila} />}
+      {matches?.length > 0 && cfg?.faceit.ok && fs.st?.expirou && !fs.st?.rodando && (
+        <div className="setup-banner warn">
+          <div>
+            <b>Seu login na FACEIT expirou</b>
+            <p>As suas partidas novas da FACEIT não estão sendo baixadas. Entre de novo; o download recomeça sozinho quando você fechar a janela.</p>
+          </div>
+          <button className="btn-primary" onClick={fs.login}>Entrar na FACEIT</button>
+        </div>
+      )}
+      {matches?.length > 0 && cfg && !cfg.faceit.ok && (
         <div className="setup-banner">
           <div>
             <b>Conecte suas contas</b>
@@ -246,15 +299,9 @@ export default function Home({ open, live, fila, go }) {
       <div className="home-grid">
         <div className="matches">
           {matches === null && <div className="loading"><div><div className="spinner" />Carregando…</div></div>}
-          {matches?.length === 0 && (
-            <div className="card empty">
-              <b>Nenhuma partida ainda</b>
-              Clique em <b style={{ display: 'inline' }}>+ Adicionar demo</b> ou baixe uma demo da FACEIT: ela aparece aqui sozinha.
-            </div>
-          )}
           {matches?.map((m) => <MatchRow key={m.id} m={m} open={open} addDemo={add} />)}
         </div>
-        <Evolution data={evo} />
+        {matches?.length > 0 && <Evolution data={evo} />}
       </div>
       )}
     </div>

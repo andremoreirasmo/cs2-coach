@@ -22,6 +22,10 @@ def _match_ids(me: str, source: str | None, last: int | None) -> list[int]:
     return [r["id"] for r in db.q(sql, *args)]
 
 
+def analyzed_count() -> int:
+    return db.q1("SELECT COUNT(*) n FROM matches WHERE analyzed_at IS NOT NULL")["n"]
+
+
 def _in(ids: list[int]) -> str:
     return ",".join(str(int(i)) for i in ids) or "NULL"
 
@@ -102,7 +106,7 @@ def _deaths(me: str, ids: list[int]) -> dict | None:
 def stats(source: str | None = None, last: int | None = None) -> dict:
     me = _me()
     if not me:
-        return {"me": None}
+        return {"me": None, "analisadas": analyzed_count()}
     ids = _match_ids(me, source, last)
     trend = [dict(r) for r in db.q(f"""SELECT m.id, m.map, m.source, m.result, COALESCE(m.played_at, m.ended_at) quando,
                                        p.rating nota, p.adr FROM matches m JOIN demo_players p ON p.match_id=m.id AND p.steamid=?

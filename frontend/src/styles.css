@@ -701,3 +701,43 @@ kbd { font: 600 11px ui-monospace, Consolas, monospace; padding: 1px 5px; border
 
 
 .topbar-right .chips button { white-space: nowrap; }
+
+/* comparar com outro jogador */
+.cmp-form { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 14px; }
+.cmp-form .input { flex: 1 1 220px; min-width: 0; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line, #242a35);
+  background: var(--bg, #0a0c10); color: var(--text); font: inherit; outline: none; }
+.cmp-form .input:focus { border-color: rgba(244, 178, 62, .6); }
+.cmp-form .hint-line { flex-basis: 100%; margin: 0; }
+.cmp-players { margin: 0 0 16px; flex-wrap: wrap; }
+.cmp-chip { display: inline-flex; align-items: center; border-radius: 999px; background: var(--card2, #1e232d); }
+.cmp-chip button { background: none; border: 0; color: var(--muted); padding: 6px 10px; cursor: pointer; font: inherit; white-space: nowrap; }
+.cmp-chip button i { font-style: normal; opacity: .7; margin-left: 4px; }
+.cmp-chip.on button:first-child { color: var(--t); font-weight: 700; }
+.cmp-chip .x { padding-left: 2px; font-size: 16px; }
+.cmp-chip .x:hover { color: var(--loss); }
+.cmp-h { font-size: 15px; margin: 22px 0 10px; }
+.cmp-table { padding: 6px 0; margin-bottom: 8px; }
+.cmp-row { display: grid; grid-template-columns: 1fr 110px 110px; gap: 8px; padding: 8px 16px; align-items: center; }
+.cmp-row + .cmp-row { border-top: 1px solid rgba(255, 255, 255, .04); }
+.cmp-row span { color: var(--muted); }
+.cmp-row b { text-align: right; font-variant-numeric: tabular-nums; }
+.cmp-row.head b { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 600px) { .cmp-row { grid-template-columns: 1fr 70px 70px; padding: 8px 12px; } }
+
+/* primeira vez: passo a passo */
+.getstarted { padding: 18px 20px; margin-bottom: 16px; }
+.getstarted h2 { font-size: 16px; margin: 0 0 12px; }
+.getstarted ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.gs-step { display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 10px; background: rgba(255, 255, 255, .03); }
+.gs-n { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 800;
+  background: rgba(244, 178, 62, .15); color: var(--t); }
+.gs-step.done .gs-n { background: rgba(61, 220, 132, .15); color: var(--win); }
+.gs-step.done .gs-body b { color: var(--muted); }
+.gs-body { flex: 1; min-width: 0; }
+.gs-body p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+.gs-act { flex: none; }
+.gs-alt { margin: 14px 0 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
+.gs-alt b { color: var(--text); }
+.card.empty .btn-primary { margin-top: 12px; }
+@media (max-width: 600px) { .gs-step { flex-wrap: wrap; } .gs-act { width: 100%; } }
+.setup-banner.warn { background: linear-gradient(90deg, rgba(255, 93, 98, .12), transparent 70%), var(--panel); border-color: rgba(255, 93, 98, .35); }

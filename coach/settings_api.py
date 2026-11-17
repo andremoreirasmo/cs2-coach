@@ -1,17 +1,14 @@
 """Rotas da tela Configurações: salvar/testar chaves, abrir links, iniciar com o Windows."""
 from __future__ import annotations
 
-import os
 import re
-import subprocess
 import webbrowser
-from pathlib import Path
 
 import httpx
 from fastapi import APIRouter, HTTPException, Request
 
 from . import db, demos, services, vault
-from .config import ROOT, settings
+from .config import settings
 from .sharecode import decode
 
 router = APIRouter()
@@ -24,7 +21,6 @@ LINKS = {
     "steam_authcode": "https://help.steampowered.com/pt-br/wizard/HelpWithGameIssue/?appid=730&issueid=128",
 }
 NICK = re.compile(r"[A-Za-z0-9_\-]{2,32}")
-STARTUP = Path(os.environ.get("APPDATA", "")) / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "Startup" / "CS2 Coach.lnk"
 
 
 def same_origin(request: Request) -> None:
@@ -47,7 +43,7 @@ def _status() -> dict:
                   "sharecode": db.kv_get("steam_last_sharecode") or s.steam_last_sharecode,
                   "steamid": s.steam_id64,
                   "ok": bool(s.steam_key and s.steam_auth_code and s.steam_id64)},
-        "app": {"startup": STARTUP.exists(), "pausar_no_jogo": services.pause_in_game(), "apagar_originais": demos.delete_originals_on(),
+        "app": {"pausar_no_jogo": services.pause_in_game(), "apagar_originais": demos.delete_originals_on(),
                 "originais": demos.originals_left()},
     }
 
@@ -183,15 +179,3 @@ def clean_originals(request: Request):
     r = demos.delete_imported_originals()
     return {**_status(), "limpou": r}
 
-
-@router.post("/api/settings/startup")
-async def set_startup(request: Request):
-    same_origin(request)
-    on = bool((await request.json()).get("on"))
-    if on:
-        script = ROOT / "tools" / "criar_atalhos.ps1"
-        subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(script), "-Startup"],
-                       capture_output=True, timeout=30, creationflags=subprocess.CREATE_NO_WINDOW)
-    else:
-        STARTUP.unlink(missing_ok=True)
-    return _status()
